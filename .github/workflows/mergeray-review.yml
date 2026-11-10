@@ -1,0 +1,38 @@
+# Trusted reusable workflow for MergeRay source reviews.
+# Callers pin this file by full commit SHA; the MergeRay service registers that
+# exact SHA, so pull request edits cannot replace the trusted steps.
+name: MergeRay source review
+on:
+  workflow_call:
+permissions: {}
+jobs:
+  source-review:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+      actions: read
+      pull-requests: read
+      checks: write
+    steps:
+      - name: Require supported same-repository PR
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          TARGET_REPOSITORY_ID: ${{ github.event.repository.id }}
+          HEAD_REPOSITORY_ID: ${{ github.event.pull_request.head.repo.id }}
+        run: |
+          if [ "$EVENT_NAME" != "pull_request" ] || [ -z "$HEAD_REPOSITORY_ID" ] || [ "$HEAD_REPOSITORY_ID" != "$TARGET_REPOSITORY_ID" ]; then
+            echo "MergeRay unavailable: supported same-repository context required."
+            exit 1
+          fi
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: Mergeray/mergeray/action@6da703bdec37af36817196145411b6c2f061a250 # v0.2.1
+        with:
+          service-url: https://source.mergeray.com
+          oidc-audience: urn:mergeray:source-service
+          github-token: ${{ github.token }}
+          inline: "false"
