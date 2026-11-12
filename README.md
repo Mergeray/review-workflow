@@ -18,10 +18,14 @@ jobs:
       id-token: write
       contents: read
       actions: read
-      pull-requests: read
+      pull-requests: write
       checks: write
     uses: Mergeray/review-workflow/.github/workflows/mergeray-review.yml@FULL_COMMIT_SHA
 ```
+
+Findings that MergeRay can pin to an exact changed line are also posted as inline
+review comments, which is why `pull-requests: write` is needed. Everything else
+stays in the Check summary.
 
 The MergeRay service only accepts runs of the exact workflow commit that was
 registered for your repository. Installing or calling this workflow does not by
